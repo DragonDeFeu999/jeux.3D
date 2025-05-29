@@ -1,41 +1,184 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Mon jeu 3D</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jeu Zelda-like amélioré</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: linear-gradient(135deg, #243B55 0%, #141E30 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex; justify-content: center; align-items: center;
+    flex-direction: column;
+    user-select: none;
+    color: #eee;
+  }
+  #gameContainer {
+    position: relative;
+    width: 700px;
+    height: 450px;
+    background: #2f4f4f;
+    border-radius: 12px;
+    box-shadow: 0 0 25px #1b262c;
+    overflow: hidden;
+    border: 3px solid #0f4c75;
+  }
+  #player {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    left: 318px;
+    top: 193px;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+    transition: left 0.12s ease, top 0.12s ease, filter 0.3s ease;
+  }
+  #player img {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated; /* effet rétro */
+    border-radius: 6px;
+    display: block;
+  }
+  #playerName {
+    position: absolute;
+    top: -24px;
+    width: 100%;
+    text-align: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.9);
+    pointer-events: none;
+  }
+  #controls {
+    margin-top: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+  }
+  input[type="text"] {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: 600;
+    width: 180px;
+    box-shadow: 0 0 8px #0f4c75;
+    background: #1b262c;
+    color: #fff;
+  }
+  button {
+    background: #0f4c75;
+    border: none;
+    padding: 10px 20px;
+    color: #e1e1e1;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 12px #0f4c75;
+  }
+  button:hover {
+    background: #1481ba;
+  }
+  #instructions {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #a0b8c5;
+    max-width: 700px;
+    text-align: center;
+    user-select: text;
+  }
+</style>
 </head>
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script>
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
 
-    const geometry = new THREE.BoxGeometry();
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
+  <div id="gameContainer">
+    <div id="player" tabindex="0">
+      <div id="playerName">Link</div>
+      <img src="https://tse3.mm.bing.net/th?id=OIP.5BdTSoRu-_rYxxqNEHF-XwHaGs&pid=Api&P=0&h=180" alt="Personnage" />
+    </div>
+  </div>
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(1, 1, 1);
-    scene.add(light);
+  <div id="controls">
+    <input type="text" id="nameInput" placeholder="Choisis ton nom..." maxlength="15" />
+    <button id="fullscreenBtn">Plein écran</button>
+  </div>
 
-    camera.position.z = 5;
+  <div id="instructions">
+    Déplace le personnage avec les flèches ou ZQSD. <br />
+    Clique sur le personnage pour changer sa couleur. <br />
+    Clique sur "Plein écran" pour basculer en mode plein écran.
+  </div>
 
-    function animate() {
-      requestAnimationFrame(animate);
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
-      renderer.render(scene, camera);
+<script>
+  const player = document.getElementById('player');
+  const playerName = document.getElementById('playerName');
+  const nameInput = document.getElementById('nameInput');
+  const gameContainer = document.getElementById('gameContainer');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const speed = 12;
+
+  let posX = player.offsetLeft;
+  let posY = player.offsetTop;
+  let hue = 0;
+
+  // Bouger le personnage
+  window.addEventListener('keydown', (e) => {
+    let moved = false;
+    switch(e.key.toLowerCase()){
+      case 'arrowup':
+      case 'z':
+        posY = Math.max(0, posY - speed);
+        moved = true;
+        break;
+      case 'arrowdown':
+      case 's':
+        posY = Math.min(gameContainer.clientHeight - player.clientHeight, posY + speed);
+        moved = true;
+        break;
+      case 'arrowleft':
+      case 'q':
+        posX = Math.max(0, posX - speed);
+        moved = true;
+        break;
+      case 'arrowright':
+      case 'd':
+        posX = Math.min(gameContainer.clientWidth - player.clientWidth, posX + speed);
+        moved = true;
+        break;
     }
+    if(moved){
+      player.style.left = posX + 'px';
+      player.style.top = posY + 'px';
+    }
+  });
 
-    animate();
-  </script>
+  // Changer le nom via l'input
+  nameInput.addEventListener('input', () => {
+    let name = nameInput.value.trim();
+    if(name.length === 0) name = "Link";
+    playerName.textContent = name;
+  });
+
+  // Changer la couleur du personnage au clic
+  player.addEventListener('click', () => {
+    hue = (hue + 60) % 360;
+    player.style.filter = `hue-rotate(${hue}deg) drop-shadow(0 2px 6px rgba(0,0,0,0.8))`;
+  });
+
+  // Bouton plein écran
+  fullscreenBtn.addEventListener('click', () => {
+    if(!document.fullscreenElement){
+      gameContainer.requestFullscreen().catch(console.error);
+    } else {
+      document.exitFullscreen();
+    }
+  });
+</script>
+
 </body>
 </html>
