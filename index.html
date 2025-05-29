@@ -3,181 +3,633 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jeu Zelda-like amélioré</title>
+<title>Zelda-Like 2D amélioré</title>
 <style>
+  /* Styles généraux */
   body, html {
-    margin: 0; padding: 0; height: 100%; overflow: hidden;
-    background: linear-gradient(135deg, #243B55 0%, #141E30 100%);
+    margin:0; padding:0; height:100%;
+    background: #1e2a2f; /* fond sombre et doux */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex; justify-content: center; align-items: center;
-    flex-direction: column;
+    overflow: hidden;
     user-select: none;
     color: #eee;
   }
   #gameContainer {
     position: relative;
-    width: 700px;
-    height: 450px;
-    background: #2f4f4f;
+    width: 800px;
+    height: 500px;
+    margin: 20px auto;
+    background: #2c3e50; /* fond doux */
     border-radius: 12px;
-    box-shadow: 0 0 25px #1b262c;
+    box-shadow: 0 0 20px #0008 inset;
     overflow: hidden;
-    border: 3px solid #0f4c75;
   }
+  /* Joueur */
   #player {
     position: absolute;
     width: 64px;
     height: 64px;
-    left: 318px;
-    top: 193px;
+    left: 368px;
+    top: 218px;
     cursor: pointer;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
-    transition: left 0.12s ease, top 0.12s ease, filter 0.3s ease;
   }
   #player img {
     width: 100%;
     height: 100%;
-    image-rendering: pixelated; /* effet rétro */
-    border-radius: 6px;
-    display: block;
+    image-rendering: pixelated;
   }
   #playerName {
     position: absolute;
-    top: -24px;
+    top: -22px;
     width: 100%;
     text-align: center;
     font-weight: 700;
-    font-size: 16px;
-    color: #fff;
-    text-shadow: 1px 1px 6px rgba(0,0,0,0.9);
+    font-size: 18px;
+    color: #d0f0c0;
+    text-shadow: 1px 1px 4px #000a;
     pointer-events: none;
   }
-  #controls {
-    margin-top: 15px;
-    display: flex;
-    gap: 15px;
-    align-items: center;
+  /* Barre de vie joueur */
+  #playerHealthBar {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 64px;
+    height: 6px;
+    background: #5c5c5c;
+    border-radius: 3px;
+    overflow: hidden;
   }
-  input[type="text"] {
-    padding: 8px 12px;
+  #playerHealth {
+    height: 100%;
+    background: #3adb35; /* vert */
+    width: 100%;
+    transition: width 0.3s ease;
+  }
+  /* Zone d'attaque */
+  #attackZone {
+    position: absolute;
+    border: 2px solid rgba(58,219,53,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    box-sizing: border-box;
+    transition: width 0.2s ease, height 0.2s ease;
+  }
+  /* Barre de vie monstre */
+  .monsterHealthBar {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 48px;
+    height: 5px;
+    background: #5c5c5c;
+    border-radius: 3px;
+    overflow: hidden;
+    pointer-events: none;
+    filter: drop-shadow(0 0 2px #000);
+  }
+  .monsterHealth {
+    height: 100%;
+    background: #e74c3c; /* rouge */
+    width: 100%;
+    transition: width 0.3s ease;
+  }
+  /* Monstres */
+  .monster {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+  }
+  .monster img {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
     border-radius: 6px;
-    border: none;
-    outline: none;
-    font-size: 16px;
-    font-weight: 600;
-    width: 180px;
-    box-shadow: 0 0 8px #0f4c75;
-    background: #1b262c;
-    color: #fff;
   }
-  button {
-    background: #0f4c75;
+  /* Barre niveau */
+  #levelBarContainer {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 220px;
+    height: 24px;
+    background: #34495e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 8px #222 inset;
+  }
+  #levelBar {
+    height: 100%;
+    background: #27ae60;
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+  #levelText {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 2px;
+    font-weight: 700;
+    font-size: 16px;
+    color: #ecf0f1;
+    text-shadow: 1px 1px 2px #0008;
+    pointer-events: none;
+  }
+  /* Overlay pause */
+  #pauseOverlay {
+    position: absolute;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.7);
+    color: #eee;
+    font-size: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    display: none;
+  }
+  /* Overlay game over */
+  #gameOverOverlay {
+    position: absolute;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(20,0,0,0.85);
+    color: #ff5555;
+    font-size: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    display: none;
+  }
+  #gameOverOverlay button {
+    margin-top: 25px;
+    background: #ff5555;
     border: none;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 0 12px #ff4444;
+  }
+  /* Controls */
+  #controls {
+    width: 800px;
+    margin: 10px auto 30px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  #controls input[type=text] {
+    font-size: 18px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    width: 220px;
+    box-shadow: 0 0 10px #27ae60;
+    outline: none;
+  }
+  #controls button {
     padding: 10px 20px;
-    color: #e1e1e1;
     font-weight: 700;
     border-radius: 8px;
     cursor: pointer;
+    border: none;
+    background: #27ae60;
+    color: #fff;
+    box-shadow: 0 0 10px #27ae60;
     transition: background 0.3s ease;
-    box-shadow: 0 0 12px #0f4c75;
   }
-  button:hover {
-    background: #1481ba;
-  }
-  #instructions {
-    margin-top: 12px;
-    font-size: 14px;
-    color: #a0b8c5;
-    max-width: 700px;
-    text-align: center;
-    user-select: text;
+  #controls button:hover {
+    background: #2ecc71;
   }
 </style>
 </head>
 <body>
 
-  <div id="gameContainer">
+  <div id="gameContainer" tabindex="0">
     <div id="player" tabindex="0">
       <div id="playerName">Link</div>
-      <img src="https://tse3.mm.bing.net/th?id=OIP.5BdTSoRu-_rYxxqNEHF-XwHaGs&pid=Api&P=0&h=180" alt="Personnage" />
+      <div id="playerHealthBar"><div id="playerHealth"></div></div>
+      <img src="https://i.imgur.com/9R1yF7k.png" alt="Link sprite" />
+      <div id="attackZone"></div>
     </div>
   </div>
 
-  <div id="controls">
-    <input type="text" id="nameInput" placeholder="Choisis ton nom..." maxlength="15" />
-    <button id="fullscreenBtn">Plein écran</button>
+  <div id="levelBarContainer">
+    <div id="levelBar"></div>
+    <div id="levelText">Niveau 1</div>
   </div>
 
-  <div id="instructions">
-    Déplace le personnage avec les flèches ou ZQSD. <br />
-    Clique sur le personnage pour changer sa couleur. <br />
-    Clique sur "Plein écran" pour basculer en mode plein écran.
+  <div id="controls">
+    <input type="text" id="nameInput" maxlength="15" placeholder="Choisis ton nom..." />
+    <button id="startBtn">Commencer</button>
+    <button id="pauseBtn">Pause (P)</button>
+  </div>
+
+  <div id="pauseOverlay">PAUSE</div>
+  <div id="gameOverOverlay">
+    GAME OVER
+    <button id="restartBtn">Rejouer</button>
   </div>
 
 <script>
+(() => {
+  const gameContainer = document.getElementById('gameContainer');
   const player = document.getElementById('player');
   const playerName = document.getElementById('playerName');
+  const playerHealthBar = document.getElementById('playerHealth');
+  const attackZone = document.getElementById('attackZone');
+  const levelBar = document.getElementById('levelBar');
+  const levelText = document.getElementById('levelText');
   const nameInput = document.getElementById('nameInput');
-  const gameContainer = document.getElementById('gameContainer');
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-  const speed = 12;
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseOverlay = document.getElementById('pauseOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const restartBtn = document.getElementById('restartBtn');
 
-  let posX = player.offsetLeft;
-  let posY = player.offsetTop;
-  let hue = 0;
+  // Variables joueur
+  let posX = 368;
+  let posY = 218;
+  let speed = 6;
+  let maxHealth = 100;
+  let health = maxHealth;
+  let level = 1;
+  let xp = 0;
+  let xpToNextLevel = 50;
+  let attackRange = 60; // rayon d'attaque en px, augmente avec lvl
+  let attackDamage = 10;
+  let lastHitTime = 0;
+  let lastDamagedTime = 0;
+  let regenCooldown = 2000; // 2 sec sans dégâts
+  let isPaused = false;
+  let gameStarted = false;
 
-  // Bouger le personnage
+  // Zone d'attaque (cercle) update selon lvl
+  function updateAttackZone() {
+    let diameter = attackRange * 2;
+    attackZone.style.width = diameter + 'px';
+    attackZone.style.height = diameter + 'px';
+    attackZone.style.left = (player.offsetWidth/2 - attackRange) + 'px';
+    attackZone.style.top = (player.offsetHeight/2 - attackRange) + 'px';
+  }
+
+  // Monstres
+  const monsterSprites = [
+    'https://i.imgur.com/ogA2sKj.png', // goblin
+    'https://i.imgur.com/TxVziCF.png', // orc
+    'https://i.imgur.com/Kmh7ZAx.png', // slime
+  ];
+
+  class Monster {
+    constructor(id) {
+      this.id = id;
+      this.element = document.createElement('div');
+      this.element.classList.add('monster');
+      this.img = document.createElement('img');
+      this.img.src = monsterSprites[Math.floor(Math.random()*monsterSprites.length)];
+      this.element.appendChild(this.img);
+
+      // Barre de vie
+      this.healthBarContainer = document.createElement('div');
+      this.healthBarContainer.classList.add('monsterHealthBar');
+      this.healthBar = document.createElement('div');
+      this.healthBar.classList.add('monsterHealth');
+      this.healthBarContainer.appendChild(this.healthBar);
+      this.element.appendChild(this.healthBarContainer);
+
+      this.maxHealth = 30 + level * 10;
+      this.health = this.maxHealth;
+      this.speed = 1 + 0.2 * level;
+      this.damage = 5 + level * 2;
+      this.size = 48;
+
+      // Spawn aléatoire hors du joueur
+      let spawnPos = this.randomSpawn();
+      this.x = spawnPos.x;
+      this.y = spawnPos.y;
+
+      this.element.style.left = this.x + 'px';
+      this.element.style.top = this.y + 'px';
+
+      gameContainer.appendChild(this.element);
+
+      this.alive = true;
+    }
+
+    randomSpawn() {
+      let margin = 60;
+      let x, y;
+      do {
+        x = Math.random() * (gameContainer.clientWidth - this.size);
+        y = Math.random() * (gameContainer.clientHeight - this.size);
+      } while (
+        x > posX - margin && x < posX + margin + player.offsetWidth &&
+        y > posY - margin && y < posY + margin + player.offsetHeight
+      );
+      return {x, y};
+    }
+
+    update() {
+      if(!this.alive) return;
+
+      // Se diriger vers joueur
+      let dx = posX - this.x;
+      let dy = posY - this.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist > 1) {
+        this.x += (dx/dist)*this.speed;
+        this.y += (dy/dist)*this.speed;
+      }
+
+      this.element.style.left = this.x + 'px';
+      this.element.style.top = this.y + 'px';
+
+      // Mise à jour barre de vie
+      this.healthBar.style.width = (this.health/this.maxHealth)*100 + '%';
+      this.healthBarContainer.style.left = '0px';
+      this.healthBarContainer.style.top = '-10px';
+
+      // Si mort
+      if(this.health <= 0) {
+        this.die();
+      }
+    }
+
+    takeDamage(dmg) {
+      this.health -= dmg;
+      if(this.health < 0) this.health = 0;
+    }
+
+    die() {
+      this.alive = false;
+      gameContainer.removeChild(this.element);
+      monsters = monsters.filter(m => m !== this);
+      // XP + level up check
+      xp += 20;
+      checkLevelUp();
+    }
+  }
+
+  let monsters = [];
+  const maxMonsters = 6;
+
+  // Créer un monstre si possible
+  function spawnMonster() {
+    if(monsters.length < maxMonsters && gameStarted && !isPaused) {
+      let newMonster = new Monster(Date.now());
+      monsters.push(newMonster);
+    }
+  }
+
+  // Check montée de niveau
+  function checkLevelUp() {
+    while(xp >= xpToNextLevel) {
+      xp -= xpToNextLevel;
+      level++;
+      xpToNextLevel = Math.floor(xpToNextLevel * 1.4);
+      maxHealth += 20;
+      attackDamage += 5;
+      attackRange += 5;
+      health = maxHealth; // full heal on level up
+      updateAttackZone();
+      updateHealthBar();
+      updateLevelBar();
+    }
+  }
+
+  // Met à jour la barre de vie du joueur
+  function updateHealthBar() {
+    let pct = (health/maxHealth)*100;
+    playerHealthBar.style.width = pct + '%';
+  }
+
+  // Met à jour la barre de niveau
+  function updateLevelBar() {
+    let pct = (xp/xpToNextLevel)*100;
+    levelBar.style.width = pct + '%';
+    levelText.textContent = 'Niveau ' + level;
+  }
+
+  // Gestion régénération
+  function regenHealth() {
+    if(!gameStarted || isPaused) return;
+    let now = Date.now();
+    if(now - lastDamagedTime > regenCooldown && health < maxHealth) {
+      let regenAmount = maxHealth * 0.10; // 10%
+      health += regenAmount;
+      if(health > maxHealth) health = maxHealth;
+      updateHealthBar();
+    }
+  }
+
+  // Gestion mouvement joueur & attaque
+  let keysPressed = {};
   window.addEventListener('keydown', (e) => {
+    if(!gameStarted || isPaused) return;
+
+    const key = e.key.toLowerCase();
+    keysPressed[key] = true;
+
+    // Pause toggle avec P
+    if(key === 'p') {
+      togglePause();
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if(!gameStarted || isPaused) return;
+    keysPressed[e.key.toLowerCase()] = false;
+  });
+
+  function movePlayer() {
+    if(!gameStarted || isPaused) return;
+
     let moved = false;
-    switch(e.key.toLowerCase()){
-      case 'arrowup':
-      case 'z':
-        posY = Math.max(0, posY - speed);
-        moved = true;
-        break;
-      case 'arrowdown':
-      case 's':
-        posY = Math.min(gameContainer.clientHeight - player.clientHeight, posY + speed);
-        moved = true;
-        break;
-      case 'arrowleft':
-      case 'q':
-        posX = Math.max(0, posX - speed);
-        moved = true;
-        break;
-      case 'arrowright':
-      case 'd':
-        posX = Math.min(gameContainer.clientWidth - player.clientWidth, posX + speed);
-        moved = true;
-        break;
+    if(keysPressed['z'] || keysPressed['arrowup']) {
+      posY = Math.max(0, posY - speed);
+      moved = true;
     }
-    if(moved){
-      player.style.left = posX + 'px';
-      player.style.top = posY + 'px';
+    if(keysPressed['s'] || keysPressed['arrowdown']) {
+      posY = Math.min(gameContainer.clientHeight - player.offsetHeight, posY + speed);
+      moved = true;
+    }
+    if(keysPressed['q'] || keysPressed['arrowleft']) {
+      posX = Math.max(0, posX - speed);
+      moved = true;
+    }
+    if(keysPressed['d'] || keysPressed['arrowright']) {
+      posX = Math.min(gameContainer.clientWidth - player.offsetWidth, posX + speed);
+      moved = true;
+    }
+
+    player.style.left = posX + 'px';
+    player.style.top = posY + 'px';
+
+    return moved;
+  }
+
+  // Attaque si touche espace
+  window.addEventListener('keydown', e => {
+    if(!gameStarted || isPaused) return;
+
+    if(e.key === ' ') {
+      e.preventDefault();
+      attack();
     }
   });
 
-  // Changer le nom via l'input
-  nameInput.addEventListener('input', () => {
-    let name = nameInput.value.trim();
-    if(name.length === 0) name = "Link";
-    playerName.textContent = name;
-  });
+  function attack() {
+    const now = Date.now();
+    if(now - lastHitTime < 500) return; // cooldown attaque 0.5s
+    lastHitTime = now;
 
-  // Changer la couleur du personnage au clic
-  player.addEventListener('click', () => {
-    hue = (hue + 60) % 360;
-    player.style.filter = `hue-rotate(${hue}deg) drop-shadow(0 2px 6px rgba(0,0,0,0.8))`;
-  });
+    // Cercle attaque, on touche les monstres dans la zone
+    monsters.forEach(monster => {
+      if(!monster.alive) return;
+      let dx = (monster.x + monster.size/2) - (posX + player.offsetWidth/2);
+      let dy = (monster.y + monster.size/2) - (posY + player.offsetHeight/2);
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist <= attackRange) {
+        monster.takeDamage(attackDamage);
+      }
+    });
+  }
 
-  // Bouton plein écran
-  fullscreenBtn.addEventListener('click', () => {
-    if(!document.fullscreenElement){
-      gameContainer.requestFullscreen().catch(console.error);
-    } else {
-      document.exitFullscreen();
+  // Collision monstre -> joueur (dégats)
+  function checkMonsterAttack() {
+    monsters.forEach(monster => {
+      if(!monster.alive) return;
+
+      let dx = (monster.x + monster.size/2) - (posX + player.offsetWidth/2);
+      let dy = (monster.y + monster.size/2) - (posY + player.offsetHeight/2);
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < (player.offsetWidth/2 + monster.size/2) * 0.9) { 
+        // Dégâts toutes les 800ms max
+        let now = Date.now();
+        if(now - lastDamagedTime > 800) {
+          health -= monster.damage;
+          lastDamagedTime = now;
+          if(health < 0) health = 0;
+          updateHealthBar();
+          if(health === 0) gameOver();
+        }
+      }
+    });
+  }
+
+  // Game Over
+  function gameOver() {
+    gameStarted = false;
+    gameOverOverlay.style.display = 'flex';
+  }
+
+  // Rejouer
+  restartBtn.onclick = () => {
+    resetGame();
+    gameOverOverlay.style.display = 'none';
+    startGame();
+  };
+
+  // Pause
+  function togglePause() {
+    if(!gameStarted) return;
+    isPaused = !isPaused;
+    pauseOverlay.style.display = isPaused ? 'flex' : 'none';
+  }
+  pauseBtn.onclick = togglePause;
+
+  // Reset partie
+  function resetGame() {
+    posX = 368; posY = 218;
+    maxHealth = 100; health = maxHealth;
+    level = 1;
+    xp = 0;
+    xpToNextLevel = 50;
+    attackRange = 60;
+    attackDamage = 10;
+    monsters.forEach(m => {
+      if(m.alive) gameContainer.removeChild(m.element);
+    });
+    monsters = [];
+    updateAttackZone();
+    updateHealthBar();
+    updateLevelBar();
+    player.style.left = posX + 'px';
+    player.style.top = posY + 'px';
+  }
+
+  // Démarrer la partie
+  function startGame() {
+    if(gameStarted) return;
+    gameStarted = true;
+    isPaused = false;
+    pauseOverlay.style.display = 'none';
+    playerName.textContent = nameInput.value || 'Link';
+    posX = 368;
+    posY = 218;
+    health = maxHealth;
+    updateAttackZone();
+    updateHealthBar();
+    updateLevelBar();
+    player.style.left = posX + 'px';
+    player.style.top = posY + 'px';
+
+    monsters.forEach(m => {
+      if(m.alive) gameContainer.removeChild(m.element);
+    });
+    monsters = [];
+
+    lastDamagedTime = Date.now();
+    lastHitTime = 0;
+    spawnMonster();
+
+    gameLoop();
+  }
+
+  // Vérifier que le nom est renseigné avant démarrer
+  startBtn.onclick = () => {
+    if(nameInput.value.trim() === '') {
+      alert('Merci de choisir un nom avant de commencer.');
+      return;
     }
-  });
+    startGame();
+    nameInput.disabled = true;
+    startBtn.disabled = true;
+  };
+
+  // Boucle principale
+  let lastSpawn = 0;
+  function gameLoop(time=0) {
+    if(!gameStarted) return;
+    if(!isPaused) {
+      movePlayer();
+      monsters.forEach(m => m.update());
+      checkMonsterAttack();
+      regenHealth();
+
+      // Spawn un monstre toutes les 3 secondes max
+      if(time - lastSpawn > 3000) {
+        spawnMonster();
+        lastSpawn = time;
+      }
+    }
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Init zone attaque & position joueur
+  updateAttackZone();
+  player.style.left = posX + 'px';
+  player.style.top = posY + 'px';
+  updateHealthBar();
+  updateLevelBar();
+
+  // Focus sur input au chargement
+  nameInput.focus();
+
+})();
 </script>
 
 </body>
